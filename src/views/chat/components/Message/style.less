@@ -1,0 +1,91 @@
+.markdown-body {
+	background-color: transparent;
+	font-size: 14px;
+
+	p {
+		white-space: pre-wrap;
+	}
+
+	ol {
+		list-style-type: decimal;
+	}
+
+	ul {
+		list-style-type: disc;
+	}
+
+	pre code,
+	pre tt {
+		line-height: 1.65;
+	}
+
+	.highlight pre,
+	pre {
+		background-color: rgb(248, 249, 251);
+	}
+
+	code.hljs {
+		padding: 0;
+	}
+
+	.code-block {
+		&-wrapper {
+			position: relative;
+			padding-top: 24px;
+		}
+
+		&-header {
+			position: absolute;
+			top: 5px;
+			right: 0;
+			width: 100%;
+			padding: 0 1rem;
+			display: flex;
+			justify-content: flex-end;
+			align-items: center;
+			color: #b3b3b3;
+
+			&__copy {
+				cursor: pointer;
+				margin-left: 0.5rem;
+				user-select: none;
+
+				&:hover {
+					color: #65a665;
+				}
+			}
+		}
+	}
+
+}
+
+html.dark {
+
+	.message-reply {
+		.whitespace-pre-wrap {
+			white-space: pre-wrap;
+			color: var(--n-text-color);
+		}
+	}
+
+	.highlight pre,
+	pre {
+		background-color: #282c34;
+	}
+}
+.border_collapse {
+	border: 1px solid rgba(0, 0, 0, 0.2);
+	border-radius: 0.5rem;
+	padding: 1rem;
+	margin-top: 20px;
+}
+.text-model {
+	background-color: rgba(51, 36, 28, 0.5);
+	.markdown-body {
+		color: #ABA494;
+	}
+}
+.text-user {
+	background-color: rgba(51, 36, 28, 0);
+	color: #ABA494;
+}
