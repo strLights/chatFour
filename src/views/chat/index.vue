@@ -11,10 +11,11 @@ import { useUsingContext } from './hooks/useUsingContext'
 import HeaderComponent from './components/Header/index.vue'
 import { SvgIcon } from '@/components/common'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
-import { useChatStore, usePromptStore, useUserStore } from '@/store'
+import { useAppStore, useChatStore, usePromptStore, useUserStore } from '@/store'
 import { t } from '@/locales'
 import { chatOpenAI, chatfileOpenai } from '@/api/chat'
 import { modelsStore } from '@/store/modules/models/models-setting'
+import { debounce } from '@/utils/functions/debounce'
 import spark from '@/assets/spark-icon.ico'
 import qianwen from '@/assets/qwen.png'
 import chatgpt from '@/assets/baichuan.png'
@@ -22,6 +23,7 @@ import chatglm from '@/assets/chatglm.png'
 
 interface Props {
   chatId: number // 对话id
+  chatIndex: number // 对话序号
   modelName: string // 模型名称
   inputValue: string // 对话框文本内容
   inputComplete: boolean // 是否完成文本输入
@@ -42,6 +44,7 @@ const userStore = useUserStore()
 const dialog = useDialog()
 const ms = useMessage()
 const chatStore = useChatStore()
+const appStore = useAppStore()
 
 const { isMobile } = useBasicLayout()
 const { addChat, updateChat, updateChatSome, getChatByUuidAndIndex } = useChat()
@@ -874,6 +877,21 @@ function handleDelete(index: number) {
   })
 }
 
+function modelAdd() {
+  chatStore.addHistory({ title: '请选择模型', uuid: Date.now(), isEdit: false })
+  if (isMobile.value)
+    appStore.setSiderCollapsed(true)
+}
+
+function modelDelete(index: number, event?: MouseEvent | TouchEvent) {
+  // console.log('删的除模型', index)
+  event?.stopPropagation()
+  chatStore.deleteHistory(index)
+  if (isMobile.value)
+    appStore.setSiderCollapsed(true)
+}
+
+const handleDeleteDebounce = debounce(modelDelete, 600)
 // function handleClear() {
 //   if (loading.value)
 //     return
@@ -977,7 +995,8 @@ defineExpose({
       :model-name="modelName"
       :model-icon="currentIcon"
       :using-context="usingContext" @export="handleExport"
-      @toggle-using-context="toggleUsingContext"
+      @toggle-using-context="toggleUsingContext" @model-delete="handleDeleteDebounce(chatIndex, $event)"
+      @model-add="modelAdd"
     />
     <!-- <div class="LLM-list" style="width: 200px; margin-top: 5rem;">
       <div v-for="(item, index) in LlmData" :key="index" class="btn" :class="{ btn_actived: item.value === pickLlm }">

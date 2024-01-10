@@ -31,6 +31,7 @@ function handleEdit({ uuid }: Chat.History, isEdit: boolean, event?: MouseEvent)
 }
 
 function handleDelete(index: number, event?: MouseEvent | TouchEvent) {
+  // console.log('删的除模型', index)
   event?.stopPropagation()
   chatStore.deleteHistory(index)
   if (isMobile.value)

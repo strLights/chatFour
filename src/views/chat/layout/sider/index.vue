@@ -134,25 +134,6 @@ watch(
   },
 )
 
-const getKnowledgeBase = async () => {
-  getKnowledge().then((res) => {
-    const { code, msg, data } = res.data
-    if (code === 200) {
-      // console.log(data)
-      data.forEach((ele) => {
-        knowledgeList.value.push({
-          label: ele,
-          value: ele,
-        })
-      })
-    }
-    else {
-      message.error(msg)
-    }
-  }).catch((err) => {
-    message.error(err)
-  })
-}
 const storeBase = (val: string) => {
   localStorage.setItem('knowledgeBase', val)
 }
@@ -202,7 +183,7 @@ function resetParams(): void {
   score.value = 1.00
 }
 onMounted(() => {
-  getKnowledgeBase()
+  // getKnowledgeBase()
   resetParams()
   saveChatParams()
   saveKnowledgeParams()
