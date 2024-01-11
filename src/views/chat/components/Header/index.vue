@@ -1,14 +1,15 @@
 <script lang="ts" setup>
-import { computed, h, nextTick, ref } from 'vue'
-import { NAvatar, NSelect, NPopconfirm, SelectRenderTag, NText, SelectRenderLabel } from 'naive-ui'
+import { computed, h, nextTick, useAttrs } from 'vue'
+import { NConfigProvider, NAvatar, NSelect, NPopconfirm, SelectRenderTag, SelectRenderLabel } from 'naive-ui'
 import { SvgIcon } from '@/components/common'
 import { useAppStore, useChatStore } from '@/store'
 // import { useBasicLayout } from '@/hooks/useBasicLayout'
-// import { debounce } from '@/utils/functions/debounce'
+import { debounce } from '@/utils/functions/debounce'
 import spark from '@/assets/spark-icon.ico'
 import qianwen from '@/assets/qwen.png'
 import baichuan from '@/assets/baichuan.png'
 import chatglm from '@/assets/chatglm.png'
+import { SelectBaseOption } from 'naive-ui/es/select/src/interface'
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emit>()
@@ -19,6 +20,7 @@ interface Props {
   usingContext: boolean
   modelName: string
   modelIcon: string
+  modelItem: Chat.History
   // chatId: number
 }
 
@@ -32,10 +34,17 @@ interface Emit {
 const appStore = useAppStore()
 const chatStore = useChatStore()
 
+const themeOverrides = {
+  Select: {
+    border: '0px solid rgba(111, 75, 41, 1)',
+  },
+}
+
 const collapsed = computed(() => appStore.siderCollapsed)
 const currentChatHistory = computed(() => chatStore.getChatHistoryByCurrentActive)
+const attrs = useAttrs()
 
-const modelValue = props.modelName
+const modelValue = props.modelName ? props.modelName : ''
 const modelOptions = [
   {
     label: 'chatglm2-6b',
@@ -44,17 +53,17 @@ const modelOptions = [
   },
   {
     label: '通义千问',
-    value: 'qwen-api',
+    value: '通义千问',
     icon: qianwen,
   },
   {
     label: '讯飞星火',
-    value: 'xinghuo-api',
+    value: '讯飞星火',
     icon: spark,
   },
   {
     label: '百川大模型',
-    value: 'baichuan2-7b',
+    value: '百川大模型',
     icon: baichuan,
   },
 ]
@@ -107,28 +116,28 @@ const renderLabel: SelectRenderLabel = (option) => {
         },
         [
           h('div', null, [option.label as string]),
-          h(
-            NText,
-            { depth: 3, tag: 'div' },
-            {
-              default: () => 'description',
-            },
-          ),
+          // h(
+          //   NText,
+          //   { depth: 3, tag: 'div' },
+          //   {
+          //     default: () => 'description',
+          //   },
+          // ),
         ],
       ),
     ],
   )
 }
 
-function handleUpdateCollapsed() {
-  appStore.setSiderCollapsed(!collapsed.value)
-}
+// function handleUpdateCollapsed() {
+//   appStore.setSiderCollapsed(!collapsed.value)
+// }
 
-function onScrollToTop() {
-  const scrollRef = document.querySelector('#scrollRef')
-  if (scrollRef)
-    nextTick(() => scrollRef.scrollTop = 0)
-}
+// function onScrollToTop() {
+//   const scrollRef = document.querySelector('#scrollRef')
+//   if (scrollRef)
+//     nextTick(() => scrollRef.scrollTop = 0)
+// }
 
 // function handleExport() {
 //   emit('export')
@@ -145,8 +154,14 @@ function handleAdd() {
 //   if (isMobile.value)
 //     appStore.setSiderCollapsed(true)
 // }
-function getModel(value: string) {
-  console.log(value)
+function getModel(value: string, isEdit: boolean, event?: MouseEvent) {
+  const item = props.modelItem
+  item.title = value
+  // console.log(value, props.modelItem)
+  event?.stopPropagation()
+  chatStore.updateHistory(item.uuid, { isEdit })
+  debounce(location.reload(), 500)
+  // location.reload()
 }
 
 // const handleDeleteDebounce = debounce(handleDelete, 600)
@@ -172,14 +187,16 @@ function handleDel() {
         </h1>
       </div> -->
       <div style="width: 65%;height: 100%;">
-        <NSelect
-          v-model:value="modelValue"
-          :options="modelOptions"
-          :render-label="renderLabel"
-          :render-tag="renderSingleSelectTag"
-          @on-update:value="getModel(modelValue)"
-          style="--n-text-color: #ff0"
-        />
+        <NConfigProvider class="w-full h-full" :theme-overrides="themeOverrides">
+          <NSelect
+            v-model:value="modelValue"
+            :options="modelOptions"
+            :render-label="renderLabel"
+            :render-tag="renderSingleSelectTag"
+            style="--n-border: 0px solid rgb(0,0,0);"
+            @update:value="getModel(modelValue, false)"
+          />
+        </NConfigProvider>
       </div>
       <div style="width: 24%; margin-left: 15px;" class="flex items-center space-x-2">
         <!-- <HoverButton @click="toggleUsingContext"> -->
@@ -227,5 +244,42 @@ function handleDel() {
   .n-select {
     height: 100%;
   }
+  .n-select .n-input__wrapper { /* Select输入框容器的类名为 n-input__wrapper */
+    background-color: #f0f0f0; /* 设置背景色为灰色 */
+  }
+
+  .n-select .n-dropdown { /* Dropdown菜单的类名为 n-dropdown */
+    min-height: 300px; /* 限制最大高度为300像素 */
+  }
+
+  .n-select .n-option { /* Option选项的类名为 n-option */
+    color: #d8d1c0; /* 设置字体颜色为红色 */
+  }
+  :deep(.n-base-select-menu .n-base-select-option) {
+    height: 45px;
+  }
+  :deep(.n-base-selection) {
+    height: 100%;
+    color: #d8d1c0;
+    border: none !important;
+  }
+  :deep(.n-base-selection .n-base-selection-label) {
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0);
+  }
+  :deep(.n-base-selection .n-base-selection-label .n-base-selection-input) {
+    height: 56px;
+    line-height: 56px;
+    font-size: 16px;
+    color: #d8d1c0;
+  }
+  :deep(.n-avatar) {
+    background-color: rgba(0, 0, 0, 0);
+    width: 30px;
+    height: 30px;
+  }
+}
+:deep(.n-base-select-menu) {
+  background-color: rgba(43,32,26,1);
 }
 </style>

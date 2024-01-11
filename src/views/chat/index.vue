@@ -27,6 +27,7 @@ interface Props {
   modelName: string // 模型名称
   inputValue: string // 对话框文本内容
   inputComplete: boolean // 是否完成文本输入
+  modelModule: Chat.History // 循环的dataSourcesData的item
 }
 interface Emit {
   (ev: 'getInputValue'): void
@@ -54,7 +55,7 @@ const { usingContext, toggleUsingContext } = useUsingContext()
 // const { uuid } = route.params as { uuid: string }
 const uuid = props.chatId
 // const modelName = props.modelName
-// const dataSourcesData = computed(() => chatStore.history)
+const dataSourcesData = computed(() => chatStore.history)
 
 const dataSources = computed(() => chatStore.getChatByUuid(+uuid))
 const conversationList = computed(() => dataSources.value.filter(item => (!item.inversion && !!item.conversationOptions)))
@@ -878,17 +879,27 @@ function handleDelete(index: number) {
 }
 
 function modelAdd() {
-  chatStore.addHistory({ title: '请选择模型', uuid: Date.now(), isEdit: false })
-  if (isMobile.value)
-    appStore.setSiderCollapsed(true)
+  if (dataSourcesData.value.length >= 4) {
+    ms.warning('最多选择4个模型进行对话')
+  } else {
+    chatStore.addHistory({ title: '请选择模型', uuid: Date.now(), isEdit: false })
+    if (isMobile.value)
+      appStore.setSiderCollapsed(true)
+    debounce(location.reload(), 500)
+  }
 }
 
 function modelDelete(index: number, event?: MouseEvent | TouchEvent) {
   // console.log('删的除模型', index)
-  event?.stopPropagation()
-  chatStore.deleteHistory(index)
-  if (isMobile.value)
-    appStore.setSiderCollapsed(true)
+  if (dataSourcesData.value.length === 1) {
+    ms.warning('最少需保留一个模型进行对话')
+  } else {
+    event?.stopPropagation()
+    chatStore.deleteHistory(index)
+    if (isMobile.value)
+      appStore.setSiderCollapsed(true)
+    debounce(location.reload(), 500)
+  }
 }
 
 const handleDeleteDebounce = debounce(modelDelete, 600)
@@ -992,6 +1003,7 @@ defineExpose({
 <template>
   <div class="flex flex-col w-full chat_main">
     <HeaderComponent
+      :model-item="$props.modelModule"
       :model-name="modelName"
       :model-icon="currentIcon"
       :using-context="usingContext" @export="handleExport"

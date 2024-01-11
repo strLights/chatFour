@@ -1,6 +1,6 @@
 type CallbackFunc<T extends unknown[]> = (...args: T) => void
 
-export function debounce<T extends unknown[]>(
+export function debounce<T extends any[]>(
   func: CallbackFunc<T>,
   wait: number,
 ): (...args: T) => void {

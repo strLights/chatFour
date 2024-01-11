@@ -107,7 +107,7 @@ function handleClearInput() {
           <template v-for="(item, index) of dataSourcesData" :key="index">
             <ChatComponent
               :ref="childRef" :chat-id="item.uuid" :model-name="item.title" :input-value="inputValue"
-              :input-complete="status" :chat-index="index"
+              :input-complete="status" :chat-index="index" :model-module="item"
             />
           </template>
         </div>
