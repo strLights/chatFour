@@ -20,3 +20,12 @@ const { language } = useLanguage()
     </NaiveProvider>
   </NConfigProvider>
 </template>
+
+<style>
+.n-select-menu {
+  background-color: rgba(43,32,26,1) !important;
+}
+.n-base-select-menu .n-base-select-option.n-base-select-option--pending::before {
+  background-color: rgba(10, 4, 1, 0.7) !important;
+}
+</style>

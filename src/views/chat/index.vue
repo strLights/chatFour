@@ -13,7 +13,6 @@ import { SvgIcon } from '@/components/common'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
 import { useAppStore, useChatStore, usePromptStore, useUserStore } from '@/store'
 import { t } from '@/locales'
-import { chatOpenAI, chatfileOpenai } from '@/api/chat'
 import { modelsStore } from '@/store/modules/models/models-setting'
 import { debounce } from '@/utils/functions/debounce'
 import spark from '@/assets/spark-icon.ico'
@@ -82,9 +81,11 @@ const active = ref<boolean>(false)
 watch(
   () => props.inputValue,
   (newVal: string) => {
-    prompt.value = newVal
-    // if (newVal)
-    //   handleSubmit()
+    // prompt.value = newVal
+    if (newVal.length > 0 && myModel.value) {
+      prompt.value = newVal
+      handleSubmit()
+    }
   },
   {
     immediate: true,
@@ -162,13 +163,15 @@ dataSources.value.forEach((item, index) => {
 })
 // 提交文本
 function handleSubmit() {
-  if (store.Chatgpt)
-    onConversation2()
-  if (store.chatglm)
-    onConversation()
+  // if (store.Chatgpt)
+  //   onConversation2()
+  // if (store.chatglm)
+  onConversation()
 }
 // 对话模型
 async function onConversation() {
+  if (!myModel.value)
+    return
   const message = prompt.value
   if (usingContext.value) {
     for (let i = 0; i < dataSources.value.length; i = i + 2) { // 获取历史记录
@@ -239,7 +242,7 @@ async function onConversation() {
       // history: history.value,
       model_name: myModel.value,
       stream: true,
-      temperature: localStorage.getItem('temperature'),
+      temperature: Number(0.7),
     }
     const api2Data = {
       query: message,
@@ -247,12 +250,11 @@ async function onConversation() {
       history: [],
       model_name: myModel.value,
       stream: true,
-      temperature: Number(localStorage.getItem('temperature')),
+      temperature: Number(0.7),
       prompt_name: 'llm_chat',
     }
     const fetchChatAPIOnce = async () => {
       emit('getInputValue')
-      // console.log(props.modelName)
       let result = ''
       if (props.modelName === 'chatglm2-6b' || props.modelName === '讯飞星火') {
         const response = await fetch('glmapi/chat/chat', {
@@ -339,67 +341,8 @@ async function onConversation() {
           catch (error: any) { }
         }
       }
-
-      // const res = await chat(data)
-      // const result = active.value ? `${res.data.response.text}\n\n数据来源：\n\n[${res.data.url.split('/static/')[1]}](http://127.0.0.1:3000${res.data.url})` : res.data.text
-      // updateChat(
-      //   +uuid,
-      //   dataSources.value.length - 1,
-      //   {
-      //     dateTime: new Date().toLocaleString(),
-      //     text: lastText + (resdata ?? ''),
-      //     // text: result ?? '',
-      //     inversion: false,
-      //     error: false,
-      //     loading: false,
-      //     conversationOptions: null,
-      //     requestOptions: { prompt: message, options: { ...options } },
-      //   },
-      // )
       scrollToBottomIfAtBottom()
       loading.value = false
-      /* await fetchChatAPIProcess<Chat.ConversationResponse>({
-        prompt: message,
-        options,
-        signal: controller.signal,
-        onDownloadProgress: ({ event }) => {
-          const xhr = event.target
-          const { responseText } = xhr
-          // Always process the final line
-          const lastIndex = responseText.lastIndexOf('\n', responseText.length - 2)
-          let chunk = responseText
-          if (lastIndex !== -1)
-            chunk = responseText.substring(lastIndex)
-          try {
-            const data = JSON.parse(chunk)
-            updateChat(
-              +uuid,
-              dataSources.value.length - 1,
-              {
-                dateTime: new Date().toLocaleString(),
-                text: lastText + (data.text ?? ''),
-                inversion: false,
-                error: false,
-                loading: true,
-                conversationOptions: { conversationId: data.conversationId, parentMessageId: data.id },
-                requestOptions: { prompt: message, options: { ...options } },
-              },
-            )
-
-            if (openLongReply && data.detail.choices[0].finish_reason === 'length') {
-              options.parentMessageId = data.id
-              lastText = data.text
-              message = ''
-              return fetchChatAPIOnce()
-            }
-
-            scrollToBottomIfAtBottom()
-          }
-          catch (error) {
-            //
-          }
-        },
-      }) */
       updateChatSome(+uuid, dataSources.value.length - 1, { loading: false })
     }
 
@@ -443,174 +386,6 @@ async function onConversation() {
         text: errorMessage,
         inversion: false,
         knowledge: false,
-        error: true,
-        loading: false,
-        conversationOptions: null,
-        requestOptions: { prompt: message, options: { ...options } },
-      },
-    )
-    scrollToBottomIfAtBottom()
-  }
-  finally {
-    loading.value = false
-  }
-}
-async function onConversation2() {
-  const message = prompt.value
-  if (usingContext.value) {
-    for (let i = 0; i < dataSources.value.length; i = i + 2)
-      history.value.push([`Human:${dataSources.value[i].text}`, `Assistant:${dataSources.value[i + 1].text.split('\n\n数据来源：\n\n')[0]}`])
-  }
-  else { history.value.length = 0 }
-  if (!message || message.trim() === '')
-    return
-
-  controller = new AbortController()
-
-  addChat(
-    +uuid,
-    {
-      dateTime: new Date().toLocaleString(),
-      text: message,
-      inversion: true,
-      knowledge: false,
-      error: false,
-      conversationOptions: null,
-      requestOptions: { prompt: message, options: null },
-    },
-  )
-  scrollToBottom()
-
-  loading.value = true
-  prompt.value = ''
-
-  let options: Chat.ConversationRequest = {}
-  const lastContext = conversationList.value[conversationList.value.length - 1]?.conversationOptions
-
-  if (lastContext && usingContext.value)
-    options = { ...lastContext }
-
-  addChat(
-    +uuid,
-    {
-      dateTime: new Date().toLocaleString(),
-      text: '',
-      loading: true,
-      knowledge: false,
-      inversion: false,
-      error: false,
-      conversationOptions: null,
-      requestOptions: { prompt: message, options: { ...options } },
-    },
-  )
-  scrollToBottom()
-
-  try {
-    const lastText = ''
-    const fetchChatAPIOnce = async () => {
-      const res = active.value ? await chatfileOpenai({ message, api_key: store.Openaikey, basePath: store.Openaipath, history: history.value }) : await chatOpenAI({ message, api_key: store.Openaikey, basePath: store.Openaipath, history: history.value })
-      const result = active.value ? `${res.data.response.text}\n\n数据来源：\n\n[${res.data.url.split('/static/')[1]}](http://127.0.0.1:3000${res.data.url})` : res.data.text
-      updateChat(
-        +uuid,
-        dataSources.value.length - 1,
-        {
-          dateTime: new Date().toLocaleString(),
-          text: lastText + (result ?? ''),
-          inversion: false,
-          knowledge: false,
-          error: false,
-          loading: false,
-          conversationOptions: null,
-          requestOptions: { prompt: message, options: { ...options } },
-        },
-      )
-      scrollToBottomIfAtBottom()
-      loading.value = false
-      /* await fetchChatAPIProcess<Chat.ConversationResponse>({
-        prompt: message,
-        options,
-        signal: controller.signal,
-        onDownloadProgress: ({ event }) => {
-          const xhr = event.target
-          const { responseText } = xhr
-          // Always process the final line
-          const lastIndex = responseText.lastIndexOf('\n', responseText.length - 2)
-          let chunk = responseText
-          if (lastIndex !== -1)
-            chunk = responseText.substring(lastIndex)
-          try {
-            const data = JSON.parse(chunk)
-            updateChat(
-              +uuid,
-              dataSources.value.length - 1,
-              {
-                dateTime: new Date().toLocaleString(),
-                text: lastText + (data.text ?? ''),
-                inversion: false,
-                error: false,
-                loading: true,
-                conversationOptions: { conversationId: data.conversationId, parentMessageId: data.id },
-                requestOptions: { prompt: message, options: { ...options } },
-              },
-            )
-
-            if (openLongReply && data.detail.choices[0].finish_reason === 'length') {
-              options.parentMessageId = data.id
-              lastText = data.text
-              message = ''
-              return fetchChatAPIOnce()
-            }
-
-            scrollToBottomIfAtBottom()
-          }
-          catch (error) {
-            //
-          }
-        },
-      }) */
-      updateChatSome(+uuid, dataSources.value.length - 1, { loading: false })
-    }
-
-    await fetchChatAPIOnce()
-  }
-  catch (error: any) {
-    const errorMessage = error?.message ?? t('common.wrong')
-
-    if (error.message === 'canceled') {
-      updateChatSome(
-        +uuid,
-        dataSources.value.length - 1,
-        {
-          loading: false,
-        },
-      )
-      scrollToBottomIfAtBottom()
-      return
-    }
-
-    const currentChat = getChatByUuidAndIndex(+uuid, dataSources.value.length - 1)
-
-    if (currentChat?.text && currentChat.text !== '') {
-      updateChatSome(
-        +uuid,
-        dataSources.value.length - 1,
-        {
-          text: `${currentChat.text}\n[${errorMessage}]`,
-          error: false,
-          loading: false,
-        },
-      )
-      return
-    }
-
-    updateChat(
-      +uuid,
-      dataSources.value.length - 1,
-      {
-        dateTime: new Date().toLocaleString(),
-        text: errorMessage,
-        knowledge: false,
-        inversion: false,
         error: true,
         loading: false,
         conversationOptions: null,
@@ -625,6 +400,8 @@ async function onConversation2() {
 }
 
 async function handleRegenerate(index: number) {
+  if (!myModel.value)
+    return
   if (loading.value)
     return
 
@@ -658,33 +435,30 @@ async function handleRegenerate(index: number) {
 
   try {
     const lastText = ''
-    const data = {
+    const api1Data = {
       query: message,
-      history: history.value,
-      model_name: myModel.value,
-      stream: true,
-      temperature: 0.7,
-    }
-    const baseData = {
-      query: message,
-      knowledge_base_name: localStorage.getItem('knowledgeBase'),
-      top_k: 3,
-      score_threshold: 1,
       history: [],
       model_name: myModel.value,
       stream: true,
-      temperature: 0.7,
-      local_doc_url: false,
+      temperature: Number(0.7),
+    }
+    const api2Data = {
+      query: message,
+      history: [],
+      model_name: myModel.value,
+      stream: true,
+      temperature: Number(0.7),
+      prompt_name: 'llm_chat',
     }
     const fetchChatAPIOnce = async () => {
       let result = ''
-      if (localStorage.getItem('chatMode') === 'knowledge') {
-        const response = await fetch('api/chat/knowledge_base_chat', {
+      if (props.modelName === 'chatglm2-6b' || props.modelName === '讯飞星火') {
+        const response = await fetch('glmapi/chat/chat', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(baseData),
+          body: JSON.stringify(api1Data),
         })
         if (!response.body)
           return
@@ -695,9 +469,10 @@ async function handleRegenerate(index: number) {
             break
           // value = value?.replace('undefined', '')
           // console.log('knowledge data -', JSON.parse(value))
-          if (JSON.parse(value).answer)
-            result += JSON.parse(value).answer
-          resultData.value = JSON.parse(value).docs
+          // if (JSON.parse(value).answer)
+          //   result += JSON.parse(value).answer
+          // resultData.value = JSON.parse(value).docs
+          result += value
           // output.value += value?.replace('undefined', '')
           try {
             updateChat(
@@ -729,7 +504,7 @@ async function handleRegenerate(index: number) {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(data),
+          body: JSON.stringify(api2Data),
         })
         if (!response.body)
           return
@@ -881,7 +656,8 @@ function handleDelete(index: number) {
 function modelAdd() {
   if (dataSourcesData.value.length >= 4) {
     ms.warning('最多选择4个模型进行对话')
-  } else {
+  }
+  else {
     chatStore.addHistory({ title: '请选择模型', uuid: Date.now(), isEdit: false })
     if (isMobile.value)
       appStore.setSiderCollapsed(true)
@@ -893,7 +669,8 @@ function modelDelete(index: number, event?: MouseEvent | TouchEvent) {
   // console.log('删的除模型', index)
   if (dataSourcesData.value.length === 1) {
     ms.warning('最少需保留一个模型进行对话')
-  } else {
+  }
+  else {
     event?.stopPropagation()
     chatStore.deleteHistory(index)
     if (isMobile.value)
@@ -1067,32 +844,9 @@ defineExpose({
             </template>
           </div>
         </div>
-        <footer :class="footerClass">
+        <!-- <footer :class="footerClass">
           <div class="w-full max-w-screen-xl m-auto p-4">
             <div class="flex items-center justify-between space-x-2 ml-8">
-              <!-- <NSwitch v-model:value="active">
-            <template #checked>
-              知识库
-            </template>
-            <template #unchecked>
-              知识库&nbsp;&nbsp;
-            </template>
-          </NSwitch> -->
-              <!-- <HoverButton @click="handleClear">
-                <span class="text-xl text-[#4f555e] dark:text-white">
-                  <SvgIcon icon="ri:delete-bin-line" />
-                </span>
-              </HoverButton>
-              <HoverButton v-if="!isMobile" @click="handleExport">
-                <span class="text-xl text-[#4f555e] dark:text-white">
-                  <SvgIcon icon="ri:download-2-line" />
-                </span>
-              </HoverButton>
-              <HoverButton v-if="!isMobile" @click="toggleUsingContext">
-                <span class="text-xl" :class="{ 'text-[#4b9e5f]': usingContext, 'text-[#a8071a]': !usingContext }">
-                  <SvgIcon icon="ri:chat-history-line" />
-                </span>
-              </HoverButton> -->
               <NAutoComplete v-model:value="prompt" :options="searchOptions" :render-label="renderOption">
                 <template #default="{ handleInput, handleBlur, handleFocus }">
                   <NInput
@@ -1111,7 +865,7 @@ defineExpose({
               </NButton>
             </div>
           </div>
-        </footer>
+        </footer> -->
       </main>
     </div>
     <NModal v-model:show="show" :mask-closable="false" class="modal">

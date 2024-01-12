@@ -105,13 +105,17 @@ const renderLabel: SelectRenderLabel = (option) => {
         src: option.icon as string,
         round: true,
         size: 'small',
+        style: {
+          backgroundColor: 'rgba(0, 0, 0, 0)',
+        },
       }),
       h(
         'div',
         {
           style: {
             marginLeft: '12px',
-            padding: '4px 0',
+            padding: '14px 0',
+            color: '#d8d1c0',
           },
         },
         [
@@ -244,24 +248,17 @@ function handleDel() {
   .n-select {
     height: 100%;
   }
-  .n-select .n-input__wrapper { /* Select输入框容器的类名为 n-input__wrapper */
-    background-color: #f0f0f0; /* 设置背景色为灰色 */
-  }
-
-  .n-select .n-dropdown { /* Dropdown菜单的类名为 n-dropdown */
-    min-height: 300px; /* 限制最大高度为300像素 */
-  }
-
-  .n-select .n-option { /* Option选项的类名为 n-option */
-    color: #d8d1c0; /* 设置字体颜色为红色 */
-  }
+  //
   :deep(.n-base-select-menu .n-base-select-option) {
     height: 45px;
   }
   :deep(.n-base-selection) {
     height: 100%;
     color: #d8d1c0;
-    border: none !important;
+    --n-border: none !important;
+    --n-border-hover: none !important;
+    --n-border-active: none !important;
+    --n-border-focus: none !important;
   }
   :deep(.n-base-selection .n-base-selection-label) {
     height: 100%;
@@ -273,13 +270,17 @@ function handleDel() {
     font-size: 16px;
     color: #d8d1c0;
   }
-  :deep(.n-avatar) {
-    background-color: rgba(0, 0, 0, 0);
-    width: 30px;
-    height: 30px;
-  }
 }
-:deep(.n-base-select-menu) {
-  background-color: rgba(43,32,26,1);
+
+:deep(.n-avatar) {
+  background-color: rgba(0, 0, 0, 0);
+  width: 30px;
+  height: 30px;
+}
+:deep(.v-binder-follower-content .n-base-select-menu) {
+  background-color: rgba(43,32,26,1) !important;
+}
+.n-select-menu {
+  background-color: rgba(43,32,26,1) !important;
 }
 </style>

@@ -56,17 +56,18 @@ const buttonDisabled = computed(() => {
 
 const handleSubmit = () => {
   // eslint-disable-next-line array-callback-return
-  annoListRef.value.map((item: { handleSubmit: (arg0: string) => void }): void => {
-    // return console.log(item) // 打印效果在下方
-    if (prompt.value) {
-      inputValue.value = prompt.value
-      status.value = true
-      // console.log("123")
-      return item.handleSubmit('我是传递的数据')
-    }
-  })
-  // if (prompt.value) {
-  //   inputValue.value = prompt.value
+  // annoListRef.value.map((item: { handleSubmit: (arg0: string) => void }): void => {
+  //   // return console.log(item) // 打印效果在下方
+  //   if (prompt.value) {
+  //     inputValue.value = prompt.value
+  //     status.value = true
+  //     // console.log("123")
+  //     return item.handleSubmit(inputValue.value)
+  //   }
+  // })
+  if (prompt.value)
+    inputValue.value = prompt.value
+  prompt.value = ''
   //   // status.value = true
   //   // console.log("123")
   // }
@@ -118,7 +119,7 @@ function handleClearInput() {
                 <NAutoComplete v-model:value="prompt">
                   <template #default="{ handleInput, handleBlur, handleFocus }">
                     <NInput
-                      ref="inputRef" class="input_value" v-model:value="prompt" type="textarea" clearable placeholder="请输入对话内容，换行请使用Ctrl+Enter" size="large"
+                      ref="inputRef" v-model:value="prompt" class="input_value" type="textarea" clearable placeholder="请输入对话内容，换行请使用Shift+Enter" size="large"
                       :autosize="{ minRows: 2, maxRows: isMobile ? 4 : 8 }" @input="handleInput" @focus="handleFocus"
                       @blur="handleBlur" @keypress="handleEnter"
                     />
@@ -183,6 +184,11 @@ function handleClearInput() {
 .sendBtn {
   position: absolute;
   right: 5%;
+  --n-text-color: #000 !important;
+  --n-text-color-hover: #000 !important;
+  --n-text-color-disabled: #000 !important;
+  --n-text-color-pressed: #000 !important;
+  --n-text-color-focus: #000 !important;
 }
 .modal {
   background-color: rgba(255, 255, 255, 0);
