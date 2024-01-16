@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import type { Ref } from 'vue'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { NConfigProvider, NAutoComplete, NButton, NInput, useDialog, useMessage } from 'naive-ui'
@@ -27,10 +27,10 @@ const themeOverrides = {
 const { isMobile } = useBasicLayout()
 
 const { uuid } = route.params as { uuid: string }
-const dataSourcesData = computed(() => chatStore.history)
+const dataSourcesData = ref<Chat.History[]>([])
 
 const dataSources = computed(() => chatStore.getChatByUuid(+uuid))
-const conversationList = computed(() => dataSources.value.filter(item => (!item.inversion && !!item.conversationOptions)))
+const conversationListLen = computed(() => chatStore.history.length)
 
 const annoListRef = ref<any>([])
 const childRef = (el: any) => {
@@ -54,8 +54,23 @@ const buttonDisabled = computed(() => {
 // 使用storeToRefs，保证store修改后，联想部分能够重新渲染
 // const { promptList: promptTemplate } = storeToRefs<any>(promptStore)
 
+const getDataFromLocalStorage = () => {
+  return JSON.parse(localStorage.getItem('chatStorage') || '[]').data.history
+}
+
+watch(
+  () => conversationListLen,
+  (newVal: any) => {
+    dataSourcesData.value = getDataFromLocalStorage()
+    console.log(newVal.value + '\n' + JSON.parse(localStorage.getItem('chatStorage')))
+  },
+  {
+    immediate: true,
+    deep: true,
+  },
+)
+
 const handleSubmit = () => {
-  // eslint-disable-next-line array-callback-return
   // annoListRef.value.map((item: { handleSubmit: (arg0: string) => void }): void => {
   //   // return console.log(item) // 打印效果在下方
   //   if (prompt.value) {

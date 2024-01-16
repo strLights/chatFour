@@ -23,7 +23,7 @@ const needPermission = computed(() => !!authStore.session?.auth && !authStore.to
 const getMobileClass = computed(() => {
   if (isMobile.value)
     return ['rounded-none', 'shadow-none']
-  return ['border', 'rounded-md', 'shadow-md', 'dark:border-neutral-800']
+  return ['shadow-md', 'dark:border-neutral-800']
 })
 
 const getContainerClass = computed(() => {

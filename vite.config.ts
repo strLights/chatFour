@@ -37,15 +37,15 @@ export default defineConfig((env) => {
       open: false,
       proxy: {
         '/api': {
-          target: 'http://120.133.83.144:7860/',
+          target: 'localhost:7861/',
           changeOrigin: true, // 允许跨域
           rewrite: path => path.replace('/api/', ''),
         },
-        '/glmapi': {
-          target: 'http://120.133.83.144:7861/',
-          changeOrigin: true, // 允许跨域
-          rewrite: path => path.replace('/glmapi/', ''),
-        },
+        // '/glmapi': {
+        //   target: 'http://localhost:7860/',
+        //   changeOrigin: true, // 允许跨域
+        //   rewrite: path => path.replace('/glmapi/', ''),
+        // },
       },
     },
     build: {

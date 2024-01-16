@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import { computed, defineExpose, onMounted, onUnmounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
-import { NAutoComplete, NButton, NInput, NModal, NSpin, useDialog, useMessage } from 'naive-ui'
+import { NButton, NModal, NSpin, useDialog, useMessage } from 'naive-ui'
 import html2canvas from 'html2canvas'
 import { Message } from './components'
 import { useScroll } from './hooks/useScroll'
@@ -96,8 +96,8 @@ watch(
 // const loadModel = ref([])
 const LlmData = ref([
   {
-    label: 'chatglm2-6b',
-    value: 'chatglm2-6b',
+    label: 'chatglm3-6b',
+    value: 'chatglm3-6b',
     icon: chatglm,
     status: false,
   },
@@ -236,111 +236,55 @@ async function onConversation() {
 
   try {
     const lastText = ''
-    const api1Data = {
+    const apiData = {
       query: message,
       history: [],
-      // history: history.value,
       model_name: myModel.value,
-      stream: true,
+      stream: false,
+      max_tokens: Number(0),
       temperature: Number(0.7),
-    }
-    const api2Data = {
-      query: message,
-      // history: history.value,
-      history: [],
-      model_name: myModel.value,
-      stream: true,
-      temperature: Number(0.7),
-      prompt_name: 'llm_chat',
+      prompt_name: 'default',
     }
     const fetchChatAPIOnce = async () => {
       emit('getInputValue')
-      let result = ''
-      if (props.modelName === 'chatglm2-6b' || props.modelName === '讯飞星火') {
-        const response = await fetch('glmapi/chat/chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(api1Data),
-        })
-        if (!response.body)
-          return
-        const reader = response.body.pipeThrough(new TextDecoderStream()).getReader()
-        while (true) {
-          const { value, done } = await reader.read()
-          if (done)
-            break
-          // value = value?.replace('undefined', '')
-          // console.log('knowledge data -', JSON.parse(value))
-          // if (JSON.parse(value).answer)
-          //   result += JSON.parse(value).answer
-          // resultData.value = JSON.parse(value).docs
-          result += value
-          // output.value += value?.replace('undefined', '')
-          try {
-            updateChat(
-              +uuid,
-              dataSources.value.length - 1,
-              {
-                dateTime: new Date().toLocaleString(),
-                text: lastText + (result ?? ''),
-                source: resultData.value,
-                knowledge: true,
-                inversion: false,
-                error: false,
-                loading: false,
-                conversationOptions: null,
-                requestOptions: { prompt: message, options: { ...options } },
-              },
-            )
-          }
-          catch (error: any) { }
-        }
+      const resData = {
+        text: '',
       }
-      else {
-        const resData = {
-          text: '',
+      const response = await fetch('api/chat/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(apiData),
+      })
+      if (!response.body)
+        return
+      const reader = response.body.pipeThrough(new TextDecoderStream()).getReader()
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done)
+          break
+        console.log(JSON.parse(value))
+        resData.text += JSON.parse(JSON.stringify(value)).text
+        try {
+          updateChat(
+            +uuid,
+            dataSources.value.length - 1,
+            {
+              dateTime: new Date().toLocaleString(),
+              text: lastText + (resData.text ?? ''),
+              knowledge: false,
+              inversion: false,
+              error: false,
+              loading: false,
+              conversationOptions: null,
+              requestOptions: { prompt: message, options: { ...options } },
+            },
+          )
         }
-        const response = await fetch('api/chat/chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(api2Data),
-        })
-        if (!response.body)
-          return
-        const reader = response.body.pipeThrough(new TextDecoderStream()).getReader()
-        while (true) {
-          const { value, done } = await reader.read()
-          if (done)
-            break
-          // value = value?.replace('undefined', '')
-          // console.log('received data -', value)
-          resData.text += value
-          // resdata = value
-          // resData = JSON.parse(resData)
-          // output.value += value?.replace('undefined', '')
-          try {
-            updateChat(
-              +uuid,
-              dataSources.value.length - 1,
-              {
-                dateTime: new Date().toLocaleString(),
-                text: lastText + (resData.text ?? ''),
-                knowledge: false,
-                inversion: false,
-                error: false,
-                loading: false,
-                conversationOptions: null,
-                requestOptions: { prompt: message, options: { ...options } },
-              },
-            )
-          }
-          catch (error: any) { }
-        }
+        catch (error: any) { }
       }
+      // }
       scrollToBottomIfAtBottom()
       loading.value = false
       updateChatSome(+uuid, dataSources.value.length - 1, { loading: false })
@@ -435,108 +379,56 @@ async function handleRegenerate(index: number) {
 
   try {
     const lastText = ''
-    const api1Data = {
+    const apiData = {
       query: message,
       history: [],
       model_name: myModel.value,
       stream: true,
+      max_tokens: Number(0),
       temperature: Number(0.7),
-    }
-    const api2Data = {
-      query: message,
-      history: [],
-      model_name: myModel.value,
-      stream: true,
-      temperature: Number(0.7),
-      prompt_name: 'llm_chat',
+      prompt_name: 'default',
     }
     const fetchChatAPIOnce = async () => {
-      let result = ''
-      if (props.modelName === 'chatglm2-6b' || props.modelName === '讯飞星火') {
-        const response = await fetch('glmapi/chat/chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(api1Data),
-        })
-        if (!response.body)
-          return
-        const reader = response.body.pipeThrough(new TextDecoderStream()).getReader()
-        while (true) {
-          const { value, done } = await reader.read()
-          if (done)
-            break
-          // value = value?.replace('undefined', '')
-          // console.log('knowledge data -', JSON.parse(value))
-          // if (JSON.parse(value).answer)
-          //   result += JSON.parse(value).answer
-          // resultData.value = JSON.parse(value).docs
-          result += value
-          // output.value += value?.replace('undefined', '')
-          try {
-            updateChat(
-              +uuid,
-              index,
-              {
-                dateTime: new Date().toLocaleString(),
-                text: lastText + (result ?? ''),
-                source: resultData.value,
-                knowledge: true,
-                inversion: false,
-                error: false,
-                loading: false,
-                conversationOptions: null,
-                requestOptions: { prompt: message, options: { ...options } },
-              },
-            )
-          }
-          catch (error: any) { }
-        }
+      const resData = {
+        text: '',
       }
-      // else if (localStorage.getItem('chatMode') === 'LLM' || null) {
-      else {
-        const resData = {
-          text: '',
+      const response = await fetch('api/chat/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(apiData),
+      })
+      if (!response.body)
+        return
+      const reader = response.body.pipeThrough(new TextDecoderStream()).getReader()
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done)
+          break
+        // value = value?.replace('undefined', '')
+        // console.log('received data -', value)
+        resData.text += value
+        // resdata = value
+        // resData = JSON.parse(resData)
+        // output.value += value?.replace('undefined', '')
+        try {
+          updateChat(
+            +uuid,
+            index,
+            {
+              dateTime: new Date().toLocaleString(),
+              text: lastText + (resData.text ?? ''),
+              knowledge: false,
+              inversion: false,
+              error: false,
+              loading: false,
+              conversationOptions: null,
+              requestOptions: { prompt: message, options: { ...options } },
+            },
+          )
         }
-        const response = await fetch('api/chat/chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(api2Data),
-        })
-        if (!response.body)
-          return
-        const reader = response.body.pipeThrough(new TextDecoderStream()).getReader()
-        while (true) {
-          const { value, done } = await reader.read()
-          if (done)
-            break
-          // value = value?.replace('undefined', '')
-          // console.log('received data -', value)
-          resData.text += value
-          // resdata = value
-          // resData = JSON.parse(resData)
-          // output.value += value?.replace('undefined', '')
-          try {
-            updateChat(
-              +uuid,
-              index,
-              {
-                dateTime: new Date().toLocaleString(),
-                text: lastText + (resData.text ?? ''),
-                knowledge: false,
-                inversion: false,
-                error: false,
-                loading: false,
-                conversationOptions: null,
-                requestOptions: { prompt: message, options: { ...options } },
-              },
-            )
-          }
-          catch (error: any) { }
-        }
+        catch (error: any) { }
       }
       scrollToBottomIfAtBottom()
       loading.value = false
@@ -661,7 +553,7 @@ function modelAdd() {
     chatStore.addHistory({ title: '请选择模型', uuid: Date.now(), isEdit: false })
     if (isMobile.value)
       appStore.setSiderCollapsed(true)
-    debounce(location.reload(), 500)
+    // debounce(location.reload(), 500)
   }
 }
 
@@ -675,7 +567,7 @@ function modelDelete(index: number, event?: MouseEvent | TouchEvent) {
     chatStore.deleteHistory(index)
     if (isMobile.value)
       appStore.setSiderCollapsed(true)
-    debounce(location.reload(), 500)
+    // debounce(location.reload(), 500)
   }
 }
 
@@ -908,7 +800,7 @@ defineExpose({
   justify-content: space-between;
   // padding: 15px;
   width: 100%;
-  height: 500px;
+  max-height: 500px;
 
   .mainer {
     background-color: rgba(10, 4, 1, 0.7);

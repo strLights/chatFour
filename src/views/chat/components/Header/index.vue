@@ -1,6 +1,7 @@
 <script lang="ts" setup>
-import { computed, h, nextTick, useAttrs } from 'vue'
-import { NConfigProvider, NAvatar, NSelect, NPopconfirm, SelectRenderTag, SelectRenderLabel } from 'naive-ui'
+import { computed, h, ref } from 'vue'
+import type { SelectRenderLabel, SelectRenderTag } from 'naive-ui'
+import { NAvatar, NConfigProvider, NSelect } from 'naive-ui'
 import { SvgIcon } from '@/components/common'
 import { useAppStore, useChatStore } from '@/store'
 // import { useBasicLayout } from '@/hooks/useBasicLayout'
@@ -9,7 +10,6 @@ import spark from '@/assets/spark-icon.ico'
 import qianwen from '@/assets/qwen.png'
 import baichuan from '@/assets/baichuan.png'
 import chatglm from '@/assets/chatglm.png'
-import { SelectBaseOption } from 'naive-ui/es/select/src/interface'
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emit>()
@@ -31,6 +31,18 @@ interface Emit {
   (ev: 'modelDelete'): void
 }
 
+interface OptionsArr {
+  label: string
+  value: string
+  icon: string
+}
+
+interface SelectedOption {
+  title: string
+  uuid: number
+  isEdit: boolean
+}
+
 const appStore = useAppStore()
 const chatStore = useChatStore()
 
@@ -42,10 +54,33 @@ const themeOverrides = {
 
 const collapsed = computed(() => appStore.siderCollapsed)
 const currentChatHistory = computed(() => chatStore.getChatHistoryByCurrentActive)
-const attrs = useAttrs()
+const dataSourcesData = computed(() => chatStore.history)
 
 const modelValue = props.modelName ? props.modelName : ''
-const modelOptions = [
+const uuid = props.modelItem?.uuid
+const newModelOptions = ref<OptionsArr[]>([
+  {
+    label: 'chatglm3-6b',
+    value: 'chatglm3-6b',
+    icon: chatglm,
+  },
+  {
+    label: '通义千问',
+    value: '通义千问',
+    icon: qianwen,
+  },
+  {
+    label: '讯飞星火',
+    value: '讯飞星火',
+    icon: spark,
+  },
+  {
+    label: '百川大模型',
+    value: '百川大模型',
+    icon: baichuan,
+  },
+])
+const modelOptions = ref<OptionsArr[]>([
   {
     label: 'chatglm2-6b',
     value: 'chatglm2-6b',
@@ -66,7 +101,7 @@ const modelOptions = [
     value: '百川大模型',
     icon: baichuan,
   },
-]
+])
 
 const renderSingleSelectTag: SelectRenderTag = ({ option }) => {
   return h(
@@ -132,6 +167,13 @@ const renderLabel: SelectRenderLabel = (option) => {
     ],
   )
 }
+function findUniqueItems(arr1: OptionsArr[], arr2: SelectedOption[]) {
+  // 合并两个数组并筛选出只出现一次的条目
+  newModelOptions.value = arr1.map((a1Item) => {
+    const isUnique = arr2.some(a2Item => a2Item.title === a1Item.value)
+    return isUnique ? { ...a1Item, disabled: true } : a1Item
+  })
+}
 
 // function handleUpdateCollapsed() {
 //   appStore.setSiderCollapsed(!collapsed.value)
@@ -194,32 +236,33 @@ function handleDel() {
         <NConfigProvider class="w-full h-full" :theme-overrides="themeOverrides">
           <NSelect
             v-model:value="modelValue"
-            :options="modelOptions"
+            :options="newModelOptions"
             :render-label="renderLabel"
             :render-tag="renderSingleSelectTag"
             style="--n-border: 0px solid rgb(0,0,0);"
+            @update:show="findUniqueItems(modelOptions, dataSourcesData)"
             @update:value="getModel(modelValue, false)"
           />
         </NConfigProvider>
       </div>
       <div style="width: 24%; margin-left: 15px;" class="flex items-center space-x-2">
         <!-- <HoverButton @click="toggleUsingContext"> -->
-        <!-- <div @click="handleDeleteDebounce(chatId, $event)"> -->
-        <NPopconfirm placement="bottom" @positive-click="handleDel">
+        <div @click="handleDel">
+          <!-- <NPopconfirm placement="bottom" @positive-click="handleDel">
           <template #trigger>
             <button class="p-1 text-xl text-[#956f4c] dark:text-white">
               <SvgIcon icon="ic:round-close" />
             </button>
           </template>
           {{ $t('chat.deleteModelConfirm') }}
-        </NPopconfirm>
-        <!-- <span style="cursor: pointer;" class="text-xl text-[#956f4c] dark:text-white">
+        </NPopconfirm> -->
+          <span style="cursor: pointer;" class="text-xl text-[#956f4c] dark:text-white">
             <SvgIcon icon="ic:round-close" />
-          </span> -->
-        <!-- </div> -->
+          </span>
+        </div>
         <!-- </HoverButton> -->
         <!-- <HoverButton @click="handleExport"> -->
-        <div @click="handleAdd">
+        <div v-if="uuid === 1002" @click="handleAdd">
           <span style="cursor: pointer;" class="text-xl text-[#956f4c] dark:text-white">
             <SvgIcon icon="fluent:add-16-regular" />
           </span>
