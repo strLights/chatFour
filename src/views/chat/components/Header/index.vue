@@ -82,8 +82,8 @@ const newModelOptions = ref<OptionsArr[]>([
 ])
 const modelOptions = ref<OptionsArr[]>([
   {
-    label: 'chatglm2-6b',
-    value: 'chatglm2-6b',
+    label: 'chatglm3-6b',
+    value: 'chatglm3-6b',
     icon: chatglm,
   },
   {
@@ -139,7 +139,7 @@ const renderLabel: SelectRenderLabel = (option) => {
       h(NAvatar, {
         src: option.icon as string,
         round: true,
-        size: 'small',
+        size: 'medium',
         style: {
           backgroundColor: 'rgba(0, 0, 0, 0)',
         },
@@ -203,10 +203,10 @@ function handleAdd() {
 function getModel(value: string, isEdit: boolean, event?: MouseEvent) {
   const item = props.modelItem
   item.title = value
-  // console.log(value, props.modelItem)
+  console.log(value, props.modelItem)
   event?.stopPropagation()
   chatStore.updateHistory(item.uuid, { isEdit })
-  debounce(location.reload(), 500)
+  // debounce(location.reload(), 500)
   // location.reload()
 }
 
@@ -232,7 +232,7 @@ function handleDel() {
           {{ modelName }}
         </h1>
       </div> -->
-      <div style="width: 65%;height: 100%;">
+      <div style="width: 80%;height: 100%;">
         <NConfigProvider class="w-full h-full" :theme-overrides="themeOverrides">
           <NSelect
             v-model:value="modelValue"
@@ -245,7 +245,7 @@ function handleDel() {
           />
         </NConfigProvider>
       </div>
-      <div style="width: 24%; margin-left: 15px;" class="flex items-center space-x-2">
+      <div style="width: 20%; margin-left: 15px; border-left-width: 1px;border-left-color: rgba(87,59,37, 1);border-left-style: solid;padding-left: 20px;" class="flex items-center space-x-2">
         <!-- <HoverButton @click="toggleUsingContext"> -->
         <div @click="handleDel">
           <!-- <NPopconfirm placement="bottom" @positive-click="handleDel">
@@ -317,8 +317,8 @@ function handleDel() {
 
 :deep(.n-avatar) {
   background-color: rgba(0, 0, 0, 0);
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
 }
 :deep(.v-binder-follower-content .n-base-select-menu) {
   background-color: rgba(43,32,26,1) !important;

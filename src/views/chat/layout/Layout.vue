@@ -58,4 +58,9 @@ const getContainerClass = computed(() => {
 :deep(.n-layout-sider) {
   background-color: #e4e2f2;
 }
+:deep(.n-layout .n-layout-scroll-container) {
+  overflow: hidden;
+  position: relative;
+  height: 100vh;
+}
 </style>

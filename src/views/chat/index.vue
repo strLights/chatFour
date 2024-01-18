@@ -19,6 +19,7 @@ import spark from '@/assets/spark-icon.ico'
 import qianwen from '@/assets/qwen.png'
 import chatgpt from '@/assets/baichuan.png'
 import chatglm from '@/assets/chatglm.png'
+import { fetchChatAPIProcess } from '@/api'
 
 interface Props {
   chatId: number // 对话id
@@ -240,10 +241,12 @@ async function onConversation() {
       query: message,
       history: [],
       model_name: myModel.value,
-      stream: false,
+      stream: true,
       max_tokens: Number(0),
       temperature: Number(0.7),
       prompt_name: 'default',
+      conversation_id: '',
+      history_len: Number(-1),
     }
     const fetchChatAPIOnce = async () => {
       emit('getInputValue')
@@ -264,9 +267,13 @@ async function onConversation() {
         const { value, done } = await reader.read()
         if (done)
           break
-        console.log(JSON.parse(value))
-        resData.text += JSON.parse(JSON.stringify(value)).text
+        const lastIndex = value.lastIndexOf('\n', value.length - 2)
+        let chunk = value
+        if (lastIndex !== -1 && value.includes('data'))
+          chunk = value.replace('data: ', '')
         try {
+          const data = JSON.parse(chunk)
+          resData.text += data?.text
           updateChat(
             +uuid,
             dataSources.value.length - 1,
@@ -284,7 +291,6 @@ async function onConversation() {
         }
         catch (error: any) { }
       }
-      // }
       scrollToBottomIfAtBottom()
       loading.value = false
       updateChatSome(+uuid, dataSources.value.length - 1, { loading: false })
@@ -387,6 +393,8 @@ async function handleRegenerate(index: number) {
       max_tokens: Number(0),
       temperature: Number(0.7),
       prompt_name: 'default',
+      conversation_id: '',
+      history_len: Number(-1),
     }
     const fetchChatAPIOnce = async () => {
       const resData = {
@@ -406,13 +414,13 @@ async function handleRegenerate(index: number) {
         const { value, done } = await reader.read()
         if (done)
           break
-        // value = value?.replace('undefined', '')
-        // console.log('received data -', value)
-        resData.text += value
-        // resdata = value
-        // resData = JSON.parse(resData)
-        // output.value += value?.replace('undefined', '')
+        const lastIndex = value.lastIndexOf('\n', value.length - 2)
+        let chunk = value
+        if (lastIndex !== -1)
+          chunk = value.replace('data: ', '')
         try {
+          const data = JSON.parse(chunk)
+          resData.text += data?.text
           updateChat(
             +uuid,
             index,
@@ -553,7 +561,7 @@ function modelAdd() {
     chatStore.addHistory({ title: '请选择模型', uuid: Date.now(), isEdit: false })
     if (isMobile.value)
       appStore.setSiderCollapsed(true)
-    // debounce(location.reload(), 500)
+    debounce(location.reload(), 500)
   }
 }
 
@@ -567,25 +575,12 @@ function modelDelete(index: number, event?: MouseEvent | TouchEvent) {
     chatStore.deleteHistory(index)
     if (isMobile.value)
       appStore.setSiderCollapsed(true)
-    // debounce(location.reload(), 500)
+    debounce(location.reload(), 500)
   }
 }
 
 const handleDeleteDebounce = debounce(modelDelete, 600)
-// function handleClear() {
-//   if (loading.value)
-//     return
 
-//   dialog.warning({
-//     title: t('chat.clearChat'),
-//     content: t('chat.clearChatConfirm'),
-//     positiveText: t('common.yes'),
-//     negativeText: t('common.no'),
-//     onPositiveClick: () => {
-//       chatStore.clearChatByUuid(+uuid)
-//     },
-//   })
-// }
 // 回车输入文本对话
 function handleEnter(event: KeyboardEvent) {
   if (!isMobile.value) {

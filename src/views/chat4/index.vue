@@ -27,7 +27,8 @@ const themeOverrides = {
 const { isMobile } = useBasicLayout()
 
 const { uuid } = route.params as { uuid: string }
-const dataSourcesData = ref<Chat.History[]>([])
+// const dataSourcesData = ref<Chat.History[]>([])
+const dataSourcesData = computed(() => chatStore.history)
 
 const dataSources = computed(() => chatStore.getChatByUuid(+uuid))
 const conversationListLen = computed(() => chatStore.history.length)
@@ -58,17 +59,17 @@ const getDataFromLocalStorage = () => {
   return JSON.parse(localStorage.getItem('chatStorage') || '[]').data.history
 }
 
-watch(
-  () => conversationListLen,
-  (newVal: any) => {
-    dataSourcesData.value = getDataFromLocalStorage()
-    console.log(newVal.value + '\n' + JSON.parse(localStorage.getItem('chatStorage')))
-  },
-  {
-    immediate: true,
-    deep: true,
-  },
-)
+// watch(
+//   () => conversationListLen,
+//   (newVal: any) => {
+//     dataSourcesData.value = getDataFromLocalStorage()
+//     console.log(newVal.value + '\n' + JSON.parse(localStorage.getItem('chatStorage')))
+//   },
+//   {
+//     immediate: true,
+//     deep: true,
+//   },
+// )
 
 const handleSubmit = () => {
   // annoListRef.value.map((item: { handleSubmit: (arg0: string) => void }): void => {
@@ -158,11 +159,11 @@ function handleClearInput() {
 
 <style scoped lang="less">
 .chat_bg {
-  width: 100%;
-  height: 100%;
+  height: 100vh;
   background: url('@/assets/chat/bg_bigmodel.png');
   background-size: 100% 100%;
   background-repeat: no-repeat;
+  position: relative;
 }
 .btn {
   display: flex;
