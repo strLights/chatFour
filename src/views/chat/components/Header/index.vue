@@ -3,9 +3,9 @@ import { computed, h, ref } from 'vue'
 import type { SelectRenderLabel, SelectRenderTag } from 'naive-ui'
 import { NAvatar, NConfigProvider, NSelect } from 'naive-ui'
 import { SvgIcon } from '@/components/common'
-import { useAppStore, useChatStore } from '@/store'
+import { /* useAppStore, */ useChatStore } from '@/store'
 // import { useBasicLayout } from '@/hooks/useBasicLayout'
-import { debounce } from '@/utils/functions/debounce'
+// import { debounce } from '@/utils/functions/debounce'
 import spark from '@/assets/spark-icon.ico'
 import qianwen from '@/assets/qwen.png'
 import baichuan from '@/assets/baichuan.png'
@@ -18,10 +18,9 @@ const emit = defineEmits<Emit>()
 
 interface Props {
   usingContext: boolean
-  modelName: string
   modelIcon: string
   modelItem: Chat.History
-  // chatId: number
+  modelIndex: number
 }
 
 interface Emit {
@@ -43,7 +42,7 @@ interface SelectedOption {
   isEdit: boolean
 }
 
-const appStore = useAppStore()
+// const appStore = useAppStore()
 const chatStore = useChatStore()
 
 const themeOverrides = {
@@ -52,12 +51,12 @@ const themeOverrides = {
   },
 }
 
-const collapsed = computed(() => appStore.siderCollapsed)
-const currentChatHistory = computed(() => chatStore.getChatHistoryByCurrentActive)
+// const collapsed = computed(() => appStore.siderCollapsed)
+// const currentChatHistory = computed(() => chatStore.getChatHistoryByCurrentActive)
 const dataSourcesData = computed(() => chatStore.history)
-
-const modelValue = props.modelName ? props.modelName : ''
-const uuid = props.modelItem?.uuid
+const modelInfo = ref(computed(() => props.modelItem))
+const modelValue = ref(computed(() => modelInfo.value.title))
+const ModelIndex = computed(() => chatStore.history.findIndex(item => item.title === props.modelItem.title))
 const newModelOptions = ref<OptionsArr[]>([
   {
     label: 'chatglm3-6b',
@@ -200,12 +199,12 @@ function handleAdd() {
 //   if (isMobile.value)
 //     appStore.setSiderCollapsed(true)
 // }
-function getModel(value: string, isEdit: boolean, event?: MouseEvent) {
-  const item = props.modelItem
-  item.title = value
-  console.log(value, props.modelItem)
-  event?.stopPropagation()
-  chatStore.updateHistory(item.uuid, { isEdit })
+function getModel(value: string) {
+  modelInfo.value.title = value
+  // item.title = value
+  // console.log(value, modelInfo.value)
+  // event?.stopPropagation()
+  chatStore.updateHistory(modelInfo.value.uuid, modelInfo.value)
   // debounce(location.reload(), 500)
   // location.reload()
 }
@@ -236,12 +235,13 @@ function handleDel() {
         <NConfigProvider class="w-full h-full" :theme-overrides="themeOverrides">
           <NSelect
             v-model:value="modelValue"
+            placeholder="请选择模型"
             :options="newModelOptions"
             :render-label="renderLabel"
             :render-tag="renderSingleSelectTag"
             style="--n-border: 0px solid rgb(0,0,0);"
             @update:show="findUniqueItems(modelOptions, dataSourcesData)"
-            @update:value="getModel(modelValue, false)"
+            @update:value="getModel"
           />
         </NConfigProvider>
       </div>
@@ -262,7 +262,7 @@ function handleDel() {
         </div>
         <!-- </HoverButton> -->
         <!-- <HoverButton @click="handleExport"> -->
-        <div v-if="uuid === 1002" @click="handleAdd">
+        <div v-if="modelIndex === 0" @click="handleAdd">
           <span style="cursor: pointer;" class="text-xl text-[#956f4c] dark:text-white">
             <SvgIcon icon="fluent:add-16-regular" />
           </span>

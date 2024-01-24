@@ -1,5 +1,6 @@
 import { ss } from '@/utils/storage'
 import qianwen from '@/assets/qwen.png'
+import defaultAvatar from '@/assets/avatar.jpg'
 
 const LOCAL_NAME = 'userStorage'
 
@@ -22,7 +23,7 @@ export interface UserState {
 export function defaultSetting(): UserState {
   return {
     userInfo: {
-      avatar: 'https://raw.githubusercontent.com/Chanzhaoyu/chatgpt-web/main/src/assets/avatar.jpg',
+      avatar: defaultAvatar,
       name: 'langchain-chatweb',
       description: 'Star on <a href="https://github.com/strLights/langchain-chatweb" class="text-blue-500" target="_blank" >GitHub</a>',
     },

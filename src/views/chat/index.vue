@@ -1,7 +1,6 @@
 <script setup lang='ts'>
 import type { Ref } from 'vue'
 import { computed, defineExpose, onMounted, onUnmounted, ref, watch } from 'vue'
-import { storeToRefs } from 'pinia'
 import { NButton, NModal, NSpin, useDialog, useMessage } from 'naive-ui'
 import html2canvas from 'html2canvas'
 import { Message } from './components'
@@ -11,15 +10,13 @@ import { useUsingContext } from './hooks/useUsingContext'
 import HeaderComponent from './components/Header/index.vue'
 import { SvgIcon } from '@/components/common'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
-import { useAppStore, useChatStore, usePromptStore, useUserStore } from '@/store'
+import { useAppStore, useChatStore } from '@/store'
 import { t } from '@/locales'
-import { modelsStore } from '@/store/modules/models/models-setting'
 import { debounce } from '@/utils/functions/debounce'
 import spark from '@/assets/spark-icon.ico'
 import qianwen from '@/assets/qwen.png'
 import chatgpt from '@/assets/baichuan.png'
 import chatglm from '@/assets/chatglm.png'
-import { fetchChatAPIProcess } from '@/api'
 
 interface Props {
   chatId: number // 对话id
@@ -39,9 +36,6 @@ const emit = defineEmits<Emit>()
 let controller = new AbortController()
 
 // const openLongReply = import.meta.env.VITE_GLOB_OPEN_LONG_REPLY === 'true'
-
-const store = modelsStore()
-const userStore = useUserStore()
 const dialog = useDialog()
 const ms = useMessage()
 const chatStore = useChatStore()
@@ -53,11 +47,12 @@ const { scrollRef, scrollToBottom, scrollToBottomIfAtBottom } = useScroll()
 const { usingContext, toggleUsingContext } = useUsingContext()
 
 // const { uuid } = route.params as { uuid: string }
-const uuid = props.chatId
+const uuid = ref(computed(() => props.chatId))
 // const modelName = props.modelName
 const dataSourcesData = computed(() => chatStore.history)
-
-const dataSources = computed(() => chatStore.getChatByUuid(+uuid))
+const modelItem = ref(computed(() => props.modelModule))
+const modelLogo = ref(computed(() => props.modelIcon))
+const dataSources = ref(computed(() => chatStore.getChatByUuid(+uuid.value)))
 const conversationList = computed(() => dataSources.value.filter(item => (!item.inversion && !!item.conversationOptions)))
 
 // 页面加载spin
@@ -69,16 +64,9 @@ const currentIcon = ref<string>('')
 const loading = ref<boolean>(false)
 const inputRef = ref<Ref | null>(null)
 
-// 添加PromptStore
-const promptStore = usePromptStore()
-
 // 历史记录相关
 const history: any = ref([])
-// 使用storeToRefs，保证store修改后，联想部分能够重新渲染
-const { promptList: promptTemplate } = storeToRefs<any>(promptStore)
 
-// 是否开启知识库问答
-const active = ref<boolean>(false)
 watch(
   () => props.inputValue,
   (newVal: string) => {
@@ -121,8 +109,7 @@ const LlmData = ref([
     status: false,
   },
 ])
-const pickLlm = ref('')
-const resultData = ref([])
+
 const getModel = (val: string): any => {
   LlmData.value.forEach((item) => {
     if (item.label === val) {
@@ -136,7 +123,6 @@ watch(
   () => props.modelName,
   (newVal: string) => {
     getModel(newVal)
-    // console.log(newVal)
   },
   {
     immediate: true,
@@ -144,23 +130,10 @@ watch(
   },
 )
 
-watch(
-  () => props.inputComplete,
-  (newVal: boolean) => {
-    if (newVal)
-      console.log(newVal)
-      // console.log(prompt.value)
-      // onConversation()
-  },
-  {
-    immediate: true,
-    deep: true,
-  },
-)
 // 未知原因刷新页面，loading 状态不会重置，手动重置
 dataSources.value.forEach((item, index) => {
   if (item.loading)
-    updateChatSome(+uuid, index, { loading: false })
+    updateChatSome(+uuid.value, index, { loading: false })
 })
 // 提交文本
 function handleSubmit() {
@@ -198,7 +171,7 @@ async function onConversation() {
   controller = new AbortController()
 
   addChat(
-    +uuid,
+    +uuid.value,
     {
       dateTime: new Date().toLocaleString(),
       text: message,
@@ -221,7 +194,7 @@ async function onConversation() {
     options = { ...lastContext }
 
   addChat(
-    +uuid,
+    +uuid.value,
     {
       dateTime: new Date().toLocaleString(),
       text: '',
@@ -275,7 +248,7 @@ async function onConversation() {
           const data = JSON.parse(chunk)
           resData.text += data?.text
           updateChat(
-            +uuid,
+            +uuid.value,
             dataSources.value.length - 1,
             {
               dateTime: new Date().toLocaleString(),
@@ -293,7 +266,7 @@ async function onConversation() {
       }
       scrollToBottomIfAtBottom()
       loading.value = false
-      updateChatSome(+uuid, dataSources.value.length - 1, { loading: false })
+      updateChatSome(+uuid.value, dataSources.value.length - 1, { loading: false })
     }
 
     await fetchChatAPIOnce()
@@ -303,7 +276,7 @@ async function onConversation() {
 
     if (error.message === 'canceled') {
       updateChatSome(
-        +uuid,
+        +uuid.value,
         dataSources.value.length - 1,
         {
           loading: false,
@@ -313,11 +286,11 @@ async function onConversation() {
       return
     }
 
-    const currentChat = getChatByUuidAndIndex(+uuid, dataSources.value.length - 1)
+    const currentChat = getChatByUuidAndIndex(+uuid.value, dataSources.value.length - 1)
 
     if (currentChat?.text && currentChat.text !== '') {
       updateChatSome(
-        +uuid,
+        +uuid.value,
         dataSources.value.length - 1,
         {
           text: `${currentChat.text}\n[${errorMessage}]`,
@@ -329,7 +302,7 @@ async function onConversation() {
     }
 
     updateChat(
-      +uuid,
+      +uuid.value,
       dataSources.value.length - 1,
       {
         dateTime: new Date().toLocaleString(),
@@ -369,7 +342,7 @@ async function handleRegenerate(index: number) {
   loading.value = true
 
   updateChat(
-    +uuid,
+    +uuid.value,
     index,
     {
       dateTime: new Date().toLocaleString(),
@@ -422,7 +395,7 @@ async function handleRegenerate(index: number) {
           const data = JSON.parse(chunk)
           resData.text += data?.text
           updateChat(
-            +uuid,
+            +uuid.value,
             index,
             {
               dateTime: new Date().toLocaleString(),
@@ -440,7 +413,7 @@ async function handleRegenerate(index: number) {
       }
       scrollToBottomIfAtBottom()
       loading.value = false
-      updateChatSome(+uuid, index, { loading: false })
+      updateChatSome(+uuid.value, index, { loading: false })
     }
 
     await fetchChatAPIOnce()
@@ -448,7 +421,7 @@ async function handleRegenerate(index: number) {
   catch (error: any) {
     if (error.message === 'canceled') {
       updateChatSome(
-        +uuid,
+        +uuid.value,
         index,
         {
           loading: false,
@@ -459,7 +432,7 @@ async function handleRegenerate(index: number) {
     const errorMessage = error?.message ?? t('common.wrong')
     if (localStorage.getItem('chatMode') === 'knowledge') {
       updateChat(
-        +uuid,
+        +uuid.value,
         index,
         {
           dateTime: new Date().toLocaleString(),
@@ -476,7 +449,7 @@ async function handleRegenerate(index: number) {
     }
     else {
       updateChat(
-        +uuid,
+        +uuid.value,
         index,
         {
           dateTime: new Date().toLocaleString(),
@@ -548,7 +521,7 @@ function handleDelete(index: number) {
     positiveText: t('common.yes'),
     negativeText: t('common.no'),
     onPositiveClick: () => {
-      chatStore.deleteChatByUuid(+uuid, index)
+      chatStore.deleteChatByUuid(+uuid.value, index)
     },
   })
 }
@@ -559,9 +532,10 @@ function modelAdd() {
   }
   else {
     chatStore.addHistory({ title: '请选择模型', uuid: Date.now(), isEdit: false })
+    appStore.recordState()
     if (isMobile.value)
       appStore.setSiderCollapsed(true)
-    debounce(location.reload(), 500)
+    // debounce(location.reload(), 500)
   }
 }
 
@@ -575,27 +549,27 @@ function modelDelete(index: number, event?: MouseEvent | TouchEvent) {
     chatStore.deleteHistory(index)
     if (isMobile.value)
       appStore.setSiderCollapsed(true)
-    debounce(location.reload(), 500)
+    // debounce(location.reload(), 500)
   }
 }
 
 const handleDeleteDebounce = debounce(modelDelete, 600)
 
 // 回车输入文本对话
-function handleEnter(event: KeyboardEvent) {
-  if (!isMobile.value) {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault()
-      handleSubmit()
-    }
-  }
-  else {
-    if (event.key === 'Enter' && event.ctrlKey) {
-      event.preventDefault()
-      handleSubmit()
-    }
-  }
-}
+// function handleEnter(event: KeyboardEvent) {
+//   if (!isMobile.value) {
+//     if (event.key === 'Enter' && !event.shiftKey) {
+//       event.preventDefault()
+//       handleSubmit()
+//     }
+//   }
+//   else {
+//     if (event.key === 'Enter' && event.ctrlKey) {
+//       event.preventDefault()
+//       handleSubmit()
+//     }
+//   }
+// }
 // 停止返回对话
 function handleStop() {
   if (loading.value) {
@@ -607,45 +581,45 @@ function handleStop() {
 // 可优化部分
 // 搜索选项计算，这里使用value作为索引项，所以当出现重复value时渲染异常(多项同时出现选中效果)
 // 理想状态下其实应该是key作为索引项,但官方的renderOption会出现问题，所以就需要value反renderLabel实现
-const searchOptions = computed(() => {
-  if (prompt.value.startsWith('/')) {
-    return promptTemplate.value.filter((item: { key: string }) => item.key.toLowerCase().includes(prompt.value.substring(1).toLowerCase())).map((obj: { value: any }) => {
-      return {
-        label: obj.value,
-        value: obj.value,
-      }
-    })
-  }
-  else {
-    return []
-  }
-})
+// const searchOptions = computed(() => {
+//   if (prompt.value.startsWith('/')) {
+//     return promptTemplate.value.filter((item: { key: string }) => item.key.toLowerCase().includes(prompt.value.substring(1).toLowerCase())).map((obj: { value: any }) => {
+//       return {
+//         label: obj.value,
+//         value: obj.value,
+//       }
+//     })
+//   }
+//   else {
+//     return []
+//   }
+// })
 
 // value反渲染key
-const renderOption = (option: { label: string }) => {
-  for (const i of promptTemplate.value) {
-    if (i.value === option.label)
-      return [i.key]
-  }
-  return []
-}
+// const renderOption = (option: { label: string }) => {
+//   for (const i of promptTemplate.value) {
+//     if (i.value === option.label)
+//       return [i.key]
+//   }
+//   return []
+// }
 
-const placeholder = computed(() => {
-  if (isMobile.value)
-    return t('chat.placeholderMobile')
-  return t('chat.placeholder')
-})
+// const placeholder = computed(() => {
+//   if (isMobile.value)
+//     return t('chat.placeholderMobile')
+//   return t('chat.placeholder')
+// })
 
-const buttonDisabled = computed(() => {
-  return loading.value || !prompt.value || prompt.value.trim() === ''
-})
+// const buttonDisabled = computed(() => {
+//   return loading.value || !prompt.value || prompt.value.trim() === ''
+// })
 
-const footerClass = computed(() => {
-  let classes = ['p-4']
-  if (isMobile.value)
-    classes = ['sticky', 'left-0', 'bottom-0', 'right-0', 'p-2', 'pr-3', 'overflow-hidden']
-  return classes
-})
+// const footerClass = computed(() => {
+//   let classes = ['p-4']
+//   if (isMobile.value)
+//     classes = ['sticky', 'left-0', 'bottom-0', 'right-0', 'p-2', 'pr-3', 'overflow-hidden']
+//   return classes
+// })
 
 onMounted(() => {
   scrollToBottom()
@@ -667,9 +641,9 @@ defineExpose({
 <template>
   <div class="flex flex-col w-full chat_main">
     <HeaderComponent
-      :model-item="$props.modelModule"
-      :model-name="modelName"
+      :model-item="modelItem"
       :model-icon="currentIcon"
+      :model-index="chatIndex"
       :using-context="usingContext" @export="handleExport"
       @toggle-using-context="toggleUsingContext" @model-delete="handleDeleteDebounce(chatIndex, $event)"
       @model-add="modelAdd"

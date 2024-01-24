@@ -1,19 +1,14 @@
 <script setup lang='ts'>
 import type { Ref } from 'vue'
-import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { storeToRefs } from 'pinia'
-import { NConfigProvider, NAutoComplete, NButton, NInput, useDialog, useMessage } from 'naive-ui'
-import { useBasicLayout } from '@/hooks/useBasicLayout'
-import { useChatStore, usePromptStore, useUserStore } from '@/store'
-import { modelsStore } from '@/store/modules/models/models-setting'
-import { SvgIcon } from '@/components/common'
+import { computed, onBeforeMount, ref } from 'vue'
+import { NAutoComplete, NButton, NConfigProvider, NInput } from 'naive-ui'
 import ChatComponent from '../chat/index.vue'
-const store = modelsStore()
-const userStore = useUserStore()
-const route = useRoute()
-const dialog = useDialog()
-const ms = useMessage()
+import { useBasicLayout } from '@/hooks/useBasicLayout'
+import { useChatStore } from '@/store'
+import { SvgIcon } from '@/components/common'
+
+// const route = useRoute()
+// const ms = useMessage()
 const chatStore = useChatStore()
 const themeOverrides = {
   Input: {
@@ -26,12 +21,10 @@ const themeOverrides = {
 }
 const { isMobile } = useBasicLayout()
 
-const { uuid } = route.params as { uuid: string }
-// const dataSourcesData = ref<Chat.History[]>([])
-const dataSourcesData = computed(() => chatStore.history)
+// const dataSourcesData = computed(() => chatStore.history)
+const dataSourcesData = ref(computed(() => chatStore.history))
 
-const dataSources = computed(() => chatStore.getChatByUuid(+uuid))
-const conversationListLen = computed(() => chatStore.history.length)
+// const conversationListLen = computed(() => chatStore.history.length)
 
 const annoListRef = ref<any>([])
 const childRef = (el: any) => {
@@ -55,15 +48,18 @@ const buttonDisabled = computed(() => {
 // 使用storeToRefs，保证store修改后，联想部分能够重新渲染
 // const { promptList: promptTemplate } = storeToRefs<any>(promptStore)
 
-const getDataFromLocalStorage = () => {
-  return JSON.parse(localStorage.getItem('chatStorage') || '[]').data.history
-}
+// const getDataFromLocalStorage = () => {
+//   const data = localStorage.getItem('chatStorage') || '[]'
+//   console.log(data)
+//   dynamicText.value = data
+// }
 
 // watch(
-//   () => conversationListLen,
-//   (newVal: any) => {
-//     dataSourcesData.value = getDataFromLocalStorage()
-//     console.log(newVal.value + '\n' + JSON.parse(localStorage.getItem('chatStorage')))
+//   () => dataSourcesData,
+//   async (newVal: any) => {
+//     await nextTick()
+//     dataSourcesData = computed(() => chatStore.history)
+//     console.log(newVal)
 //   },
 //   {
 //     immediate: true,
@@ -109,10 +105,11 @@ function handleEnter(event: KeyboardEvent) {
       // prompt.value = ''
     }
   }
-}
-
-function handleClearInput() {
-  prompt.value = ''
+  onBeforeMount(() => {
+    // await nextTick() // 等待下一次 DOM 更新
+    // getDataFromLocalStorage()
+    console.log(localStorage.getItem('chatStorage'))
+  })
 }
 </script>
 
